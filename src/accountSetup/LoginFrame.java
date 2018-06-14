@@ -1,11 +1,17 @@
 package accountSetup;
 
+// We need to import the java.sql package to use JDBC
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.*;
 
 public class LoginFrame extends JFrame implements ActionListener {
+
+    private Connection con;
+
     Container container = getContentPane();
     private JTextField emailField = new JTextField();
     private JLabel emailLabel = new JLabel("Email:");
@@ -15,15 +21,26 @@ public class LoginFrame extends JFrame implements ActionListener {
     private JButton loginButton = new JButton("Login");
     private JButton createAccountButton = new JButton("Create Account");
 
+    // user is allowed 3 login attempts
+    private int loginAttempts = 0;
+
 
 
     // Constructor for Login Class
+    //   - creates login frame
+    //   - loads JDBC driver
+    //   - connects to Oracle database ug
 
-    public LoginFrame() {
+    public LoginFrame(Connection con) {
+        this.con = con;
+
+        // setup for login frame
         setLayoutManager();
         setLocationAndSize();
         addComponents();
         addActionEvent();
+        emailField.requestFocus();
+
 
     }
 
@@ -57,19 +74,51 @@ public class LoginFrame extends JFrame implements ActionListener {
         showPasswordCheckBox.addActionListener(this);
     }
 
+//    public void loadDriver() {
+//        try {
+//            DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
+//        }
+//        catch (SQLException ex) {
+//            System.out.println("Message: " + ex.getMessage());
+//            System.exit(-1);
+//        }
+//    }
+
+//    private void connect() {
+//        String connectURL = "jdbc:oracle:thin:@dbhost.ugrad.cs.ubc.ca:1522:ug";
+//        String username = "ora_u5b1b";
+//        String password = "a24649162";
+//        try {
+//            con = DriverManager.getConnection(connectURL, username, password);
+//            System.out.println("\nConnected to Oracle!");
+//        }
+//        catch (SQLException ex) {
+//            System.out.println("Message: " + ex.getMessage());
+//        }
+//    }
+
 
     // *****
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == loginButton) {
-            String emailTxt;
-            String passwordTxt;
-            emailTxt = emailField.getText();
-            passwordTxt = passwordField.getText();
-            if (emailTxt.equalsIgnoreCase("mehtab") && passwordTxt.equalsIgnoreCase("12345")) {
+
+            if (authenticate(emailField.getText(), String.valueOf(passwordField.getPassword()))) {
                 JOptionPane.showMessageDialog(this, "Login Successful");
+                // ****************************
+                //redirect();
+                // ****************************
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid Email or Password");
+                loginAttempts++;
+
+                if (loginAttempts >= 3) {
+                    System.exit(-1);
+                }
+                else {
+                    emailField.setText("");
+                    passwordField.setText("");
+                }
             }
 
         }
@@ -87,5 +136,44 @@ public class LoginFrame extends JFrame implements ActionListener {
                 passwordField.setEchoChar('*');
             }
         }
+   }
+
+    public boolean authenticate(String email, String password) {
+        boolean valid = false;
+        Statement statement;
+        ResultSet rs;
+
+        try {
+            statement = con.createStatement();
+            rs = statement.executeQuery("SELECT * FROM APP_USER");
+            //JOptionPane.showMessageDialog(this, resultSet);
+            System.out.println("Executed query");
+
+
+
+
+            while (rs.next()) {
+                System.out.println("here");
+                String dbEmail;
+                String dbPassword;
+                dbEmail = rs.getString("EMAIL");
+                dbPassword = rs.getString("PASSWORD");
+
+//                JOptionPane.showMessageDialog(this, dbEmail);
+//                JOptionPane.showMessageDialog(this, dbPassword);
+
+                if (dbEmail.equals(email) && dbPassword.equals(password)) {
+                    valid = true;
+                }
+            }
+            statement.close();
+        }
+
+        catch (SQLException se) {
+                System.out.println("Message: " + se.getMessage());
+                System.exit(-1);
+        }
+
+        return valid;
     }
 }
