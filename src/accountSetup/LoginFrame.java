@@ -140,12 +140,13 @@ public class LoginFrame extends JFrame implements ActionListener {
 
     public boolean authenticate(String email, String password) {
         boolean valid = false;
-        Statement statement;
+        PreparedStatement pState;
         ResultSet rs;
 
         try {
-            statement = con.createStatement();
-            rs = statement.executeQuery("SELECT * FROM APP_USER");
+            pState = con.prepareStatement("SELECT * FROM APP_USER WHERE NAME=? and PASSWORD=?");
+
+            rs = pState.executeQuery("SELECT * FROM APP_USER");
             //JOptionPane.showMessageDialog(this, resultSet);
             System.out.println("Executed query");
 
@@ -166,7 +167,7 @@ public class LoginFrame extends JFrame implements ActionListener {
                     valid = true;
                 }
             }
-            statement.close();
+            pState.close();
         }
 
         catch (SQLException se) {
